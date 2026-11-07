@@ -1,0 +1,594 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql" // Hoặc "postgresql" tùy database bạn dùng
+  url      = env("DATABASE_URL")
+}
+
+// --- ENUMS (Định nghĩa các tập giá trị cố định) ---
+
+enum Role {
+  ADMIN
+  SHELTER_ADMIN
+  CUSTOMER
+}
+
+enum OrderStatus {
+  PENDING     // Chờ xác nhận
+  PROCESSING  // Đang pha chế (Mới thêm)
+  COMPLETED   // Hoàn thành/Đã giao
+  CANCELLED   // Đã hủy
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+}
+
+// --- MODELS ---
+
+// 1. user (Bảng Người dùng)
+model User {
+  id              String   @id @default(cuid())
+  userName        String   @unique @map("user_name") // Tên đăng nhập (email/username)
+  passwordHash    String   @map("password_hash")
+  role            Role     @default(CUSTOMER)
+  
+  fullName        String?  @map("full_name")
+  phoneNumber     String?  @map("phone_number")
+  shippingAddress String?  @map("shipping_address")
+  points          Int      @default(0) @map("points")       
+  totalSpent      Decimal  @default(0) @map("total_spent")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  orders          Order[]
+  // --- Admin / moderation fields ---
+  lockedUntil       DateTime?  @map("locked_until")
+  lockedPermanently Boolean    @default(false) @map("locked_permanently")
+  lockReason        String?    @map("lock_reason") @db.Text
+  lastActiveAt      DateTime?  @map("last_active_at")
+  adminRoles        AdminRoleAssignment[]
+  ownedShelters     Shelter[]  @relation("ShelterOwner")
+  shelterStaff      ShelterStaff[]
+  applications      AdoptionApplication[]
+  eventInterests    EventInterest[]
+  eventHides        EventHide[]
+  placeProposals    PlaceProposal[]
+  placeReviews      PlaceReview[]
+  reportsMade       Report[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  installs          AppInstall[]
+
+  @@map("user") // Tên bảng trong DB là "user"
+}
+
+// 2. category (Bảng Danh mục)
+model Category {
+  id           Int       @id @default(autoincrement())
+  name         String
+  imageUrl     String?   @map("image_url")
+  displayOrder Int       @default(0) @map("display_order")
+  
+  products     Product[]
+
+  @@map("category")
+}
+
+// 3. product (Bảng Sản phẩm/Đồ uống)
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  basePrice   Decimal  @map("base_price") // Dùng Decimal cho tiền tệ để chính xác
+  imageUrl    String?  @map("image_url")
+  description String?  @db.Text
+  isAvailable Boolean  @default(true) @map("is_available")
+  
+  categoryId  Int      @map("category_id")
+  category    Category @relation(fields: [categoryId], references: [id])
+
+  productOptions ProductOption[]
+  orderItems     OrderItem[]
+
+  @@map("product")
+}
+
+// 4. option_group (Bảng Nhóm tùy chọn: Size, Topping...)
+model OptionGroup {
+  id         Int     @id @default(autoincrement())
+  name       String
+  isRequired Boolean @default(false) @map("is_required")
+  isMultiple Boolean @default(false) @map("is_multiple")
+
+  optionValues   OptionValue[]
+  productOptions ProductOption[]
+
+  @@map("option_group")
+}
+
+// 5. option_value (Bảng Giá trị tùy chọn: Size L, Trân châu...)
+model OptionValue {
+  id              Int     @id @default(autoincrement())
+  name            String
+  priceAdjustment Decimal @default(0) @map("price_adjustment")
+  
+  groupId         Int     @map("group_id")
+  group           OptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@map("option_value")
+}
+
+// 6. product_option (Bảng trung gian: Sản phẩm có những nhóm tùy chọn nào)
+model ProductOption {
+  id            Int @id @default(autoincrement())
+  
+  productId     Int @map("product_id")
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  optionGroupId Int @map("option_group_id")
+  optionGroup   OptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+
+  @@map("product_option")
+}
+
+// 7. order (Bảng Đơn hàng tổng)
+model Order {
+  id            String        @id
+  
+  userId        String?       @map("user_id") // Nullable cho khách vãng lai
+  user          User?         @relation(fields: [userId], references: [id])
+  
+  totalAmount   Decimal       @map("total_amount")
+  paymentStatus PaymentStatus @default(UNPAID) @map("payment_status")
+  orderStatus   OrderStatus   @default(PENDING) @map("order_status")
+  cancelReason  String?       @map("cancel_reason") @db.Text
+  customerName  String?       @map("customer_name")
+  phoneNumber   String?       @map("phone_number")
+  note          String?       @db.Text
+
+  shippingAddress String? @map("shipping_address") 
+  receiverName    String? @map("receiver_name")    
+  receiverPhone   String? @map("receiver_phone")
+  
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  orderItems    OrderItem[]
+
+  @@map("order")
+}
+
+// 8. order_item (Chi tiết món trong đơn)
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  
+  orderId   String  @map("order_id")
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  productId Int     @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+  
+  quantity  Int
+  unitPrice Decimal @map("unit_price") // Giá snapshot tại thời điểm đặt
+
+  options   OrderItemOption[]
+
+  @@map("order_item")
+}
+
+// 9. order_item_option (Lưu tùy chọn cụ thể của món trong đơn)
+// Dùng để lưu vết (snapshot) những gì khách đã chọn
+model OrderItemOption {
+  id              Int     @id @default(autoincrement())
+  
+  orderItemId     Int     @map("order_item_id")
+  orderItem       OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  
+  optionValueName String  @map("option_value_name") // Lưu tên (VD: "Trân châu đen") phòng khi menu bị xóa/sửa
+  priceAdjustment Decimal @map("price_adjustment")  // Lưu giá (VD: 5000) tại thời điểm đặt
+
+  @@map("order_item_option")
+}
+
+// 10. store_setting (Bảng Cài đặt cửa hàng & Thông báo)
+model StoreSetting {
+  id                Int      @id @default(1) // Luôn chỉ có 1 bản ghi ID=1
+  storeName         String?  @default("Coffee House") @map("store_name")
+  hotline           String?
+  address           String?
+  openTime          String?  @default("07:00") @map("open_time")
+  closeTime         String?  @default("22:00") @map("close_time")
+  wifiPass          String?  @map("wifi_pass")
+  
+  // Field quan trọng bạn yêu cầu
+  staffNotification String?  @db.Text @map("staff_notification") 
+  
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("store_setting")
+}
+
+
+// ===================== ADMIN DASHBOARD DOMAIN =====================
+
+enum AdminRoleType {
+  SUPER_ADMIN
+  SHELTER_APPROVER
+  PLACE_APPROVER
+  EVENT_MANAGER
+  CONTENT_MODERATOR
+  SUPPORT
+}
+
+enum ShelterStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
+  REJECTED
+}
+
+enum PetStatus {
+  AVAILABLE
+  RESERVED
+  ADOPTED
+  HIDDEN
+}
+
+enum ApplicationStatus {
+  NEW
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  HIDDEN
+  CANCELLED
+  ARCHIVED
+}
+
+enum ProposalStatus {
+  PENDING
+  NEEDS_INFO
+  APPROVED
+  REJECTED
+}
+
+enum ReportTargetType {
+  EVENT
+  PLACE_REVIEW
+  GENERAL_REVIEW
+  PET_CONTENT
+  SHELTER
+  PLACE
+  QR_TAG_SCAN
+}
+
+enum ReportStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  DISMISSED
+}
+
+// Quyền admin: 1 user có nhiều vai trò
+model AdminRoleAssignment {
+  id        String        @id @default(cuid())
+  userId    String        @map("user_id")
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      AdminRoleType
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@unique([userId, role])
+  @@map("admin_role_assignment")
+}
+
+model Shelter {
+  id           String        @id @default(cuid())
+  name         String
+  email        String?
+  phone        String?
+  address      String?       @db.Text
+  lat          Float?
+  lng          Float?
+  description  String?       @db.Text
+  imageUrl     String?       @map("image_url")
+  status       ShelterStatus @default(PENDING)
+  statusNote   String?       @map("status_note") @db.Text
+  ownerId      String        @map("owner_id")
+  owner        User          @relation("ShelterOwner", fields: [ownerId], references: [id])
+  pets         Pet[]
+  applications AdoptionApplication[]
+  staff        ShelterStaff[]
+  events       Event[]
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  @@map("shelter")
+}
+
+model Pet {
+  id           String               @id @default(cuid())
+  shelterId    String               @map("shelter_id")
+  shelter      Shelter              @relation(fields: [shelterId], references: [id], onDelete: Cascade)
+  name         String
+  species      String
+  breed        String?
+  status       PetStatus            @default(AVAILABLE)
+  imageUrl     String?              @map("image_url")
+  description  String?              @db.Text
+  applications AdoptionApplication[]
+  createdAt    DateTime             @default(now()) @map("created_at")
+
+  @@index([shelterId])
+  @@map("pet")
+}
+
+model ShelterStaff {
+  id        String   @id @default(cuid())
+  shelterId String   @map("shelter_id")
+  shelter   Shelter  @relation(fields: [shelterId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   @default("STAFF")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([shelterId, userId])
+  @@map("shelter_staff")
+}
+
+model AdoptionApplication {
+  id          String            @id @default(cuid())
+  shelterId   String            @map("shelter_id")
+  shelter     Shelter           @relation(fields: [shelterId], references: [id], onDelete: Cascade)
+  petId       String            @map("pet_id")
+  pet         Pet               @relation(fields: [petId], references: [id], onDelete: Cascade)
+  applicantId String            @map("applicant_id")
+  applicant   User              @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  status      ApplicationStatus @default(NEW)
+  note        String?           @db.Text
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  @@index([shelterId])
+  @@map("adoption_application")
+}
+
+model Organizer {
+  id         String   @id @default(cuid())
+  handle     String   @unique
+  name       String
+  bio        String?  @db.Text
+  avatarUrl  String?  @map("avatar_url")
+  coverUrl   String?  @map("cover_url")
+  isVerified Boolean  @default(false) @map("is_verified")
+  events     Event[]
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("organizer")
+}
+
+model Event {
+  id            String        @id @default(cuid())
+  titleVi       String        @map("title_vi")
+  titleEn       String        @map("title_en")
+  descriptionVi String?       @map("description_vi") @db.Text
+  descriptionEn String?       @map("description_en") @db.Text
+  status        EventStatus   @default(DRAFT)
+  statusNote    String?       @map("status_note") @db.Text
+  pinned        Boolean       @default(false)
+  startsAt      DateTime      @map("starts_at")
+  endsAt        DateTime?     @map("ends_at")
+  area          String
+  locationName  String?       @map("location_name")
+  lat           Float?
+  lng           Float?
+  coverUrl      String?       @map("cover_url")
+  galleryUrls   String?       @map("gallery_urls") @db.Text
+  organizerId   String?       @map("organizer_id")
+  organizer     Organizer?    @relation(fields: [organizerId], references: [id])
+  shelterId     String?       @map("shelter_id")
+  shelter       Shelter?      @relation(fields: [shelterId], references: [id])
+  interests     EventInterest[]
+  hides         EventHide[]
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  @@index([status, startsAt])
+  @@map("event")
+}
+
+model EventInterest {
+  id        String   @id @default(cuid())
+  eventId   String   @map("event_id")
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([eventId, userId])
+  @@map("event_interest")
+}
+
+model EventHide {
+  id        String   @id @default(cuid())
+  eventId   String   @map("event_id")
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([eventId, userId])
+  @@map("event_hide")
+}
+
+model PlaceProposal {
+  id           String         @id @default(cuid())
+  submitterId  String         @map("submitter_id")
+  submitter    User           @relation(fields: [submitterId], references: [id], onDelete: Cascade)
+  name         String
+  category     String
+  address      String         @db.Text
+  lat          Float
+  lng          Float
+  phone        String?
+  website      String?
+  description  String?        @db.Text
+  status       ProposalStatus @default(PENDING)
+  rejectReason String?        @map("reject_reason") @db.Text
+  infoRequest  String?        @map("info_request") @db.Text
+  placeId      String?        @map("place_id")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@map("place_proposal")
+}
+
+model Place {
+  id           String       @id @default(cuid())
+  name         String
+  category     String
+  city         String?
+  address      String       @db.Text
+  lat          Float
+  lng          Float
+  phone        String?
+  description  String?      @db.Text
+  openingHours String?      @map("opening_hours") @db.Text
+  amenities    String?      @db.Text
+  menuText     String?      @map("menu_text") @db.Text
+  coverUrl     String?      @map("cover_url")
+  imageUrls    String?      @map("image_urls") @db.Text
+  rating       Float        @default(0)
+  reviewCount  Int          @default(0) @map("review_count")
+  isHidden     Boolean      @default(false) @map("is_hidden")
+  hiddenReason String?      @map("hidden_reason") @db.Text
+  reviews      PlaceReview[]
+  pets         PlacePet[]
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  @@map("place")
+}
+
+model PlaceReview {
+  id            String   @id @default(cuid())
+  placeId       String   @map("place_id")
+  place         Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  authorId      String   @map("author_id")
+  author        User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  rating        Int
+  content       String   @db.Text
+  imageUrls     String?  @map("image_urls") @db.Text
+  isRemoved     Boolean  @default(false) @map("is_removed")
+  removedReason String?  @map("removed_reason") @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([placeId])
+  @@map("place_review")
+}
+
+model PlacePet {
+  id        String   @id @default(cuid())
+  placeId   String   @map("place_id")
+  place     Place    @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  name      String
+  species   String
+  imageUrl  String?  @map("image_url")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("place_pet")
+}
+
+model PlaceCategory {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  isVisible Boolean @default(true) @map("is_visible")
+  sortOrder Int     @default(0) @map("sort_order")
+
+  @@map("place_category")
+}
+
+model Amenity {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  isVisible Boolean @default(true) @map("is_visible")
+
+  @@map("amenity")
+}
+
+model Report {
+  id         String           @id @default(cuid())
+  targetType ReportTargetType @map("target_type")
+  targetId   String           @map("target_id")
+  reporterId String           @map("reporter_id")
+  reporter   User             @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  reason     String           @db.Text
+  status     ReportStatus     @default(NEW)
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+
+  @@index([targetType, targetId])
+  @@index([status])
+  @@map("report")
+}
+
+// Nhật ký thao tác: ai, làm gì, đối tượng nào, trước/sau, IP
+model AuditLog {
+  id         String   @id @default(cuid())
+  adminId    String   @map("admin_id")
+  admin      User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  action     String
+  targetType String   @map("target_type")
+  targetId   String   @map("target_id")
+  before     String?  @db.Text
+  after      String?  @db.Text
+  note       String   @db.Text
+  ip         String?
+  outcome    String   @default("SUCCESS")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([targetType, targetId])
+  @@map("audit_log")
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String    @db.Text
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("notification")
+}
+
+// Thống kê app: mỗi thiết bị cài app là một bản ghi, cập nhật lastSeenAt khi mở app
+model AppInstall {
+  id            String    @id @default(cuid())
+  deviceId      String    @unique @map("device_id")
+  userId        String?   @map("user_id")
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  platform      String
+  installedAt   DateTime  @default(now()) @map("installed_at")
+  uninstalledAt DateTime? @map("uninstalled_at")
+  lastSeenAt    DateTime  @default(now()) @map("last_seen_at")
+
+  @@index([installedAt])
+  @@index([lastSeenAt])
+  @@map("app_install")
+}

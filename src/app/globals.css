@@ -1,0 +1,274 @@
+/* src/app/globals.css */
+@import 'tailwindcss';
+
+@theme {
+  /* --- CẤU HÌNH FONT CHỮ DUY NHẤT (BE VIETNAM PRO) --- */
+  --font-sans: var(--font-be-vietnam-pro, 'Be Vietnam Pro', sans-serif);
+  --font-serif: var(--font-be-vietnam-pro, 'Be Vietnam Pro', sans-serif);
+  --font-mono: var(--font-be-vietnam-pro, 'Be Vietnam Pro', monospace);
+
+  --font-poppins: var(--font-be-vietnam-pro, 'Be Vietnam Pro', sans-serif);
+  --font-josefin: var(--font-be-vietnam-pro, 'Be Vietnam Pro', sans-serif);
+  --font-inter: var(--font-be-vietnam-pro, 'Be Vietnam Pro', sans-serif);
+  --font-roboto: var(--font-be-vietnam-pro, 'Be Vietnam Pro', sans-serif);
+
+  /* --- BREAKPOINTS --- */
+  --breakpoint-2xsm: 375px;
+  --breakpoint-xsm: 425px;
+  --breakpoint-3xl: 2000px;
+
+  /* --- COLORS --- */
+  --color-coffee-primary: #c49b63;
+  --color-coffee-secondary: #1d150b;
+  --color-coffee-dark: #000000;
+  --color-coffee-light: #f5dece;
+
+  --color-brand-50: #ecf3ff;
+  --color-brand-100: #dde9ff;
+  --color-brand-400: #7592ff;
+  --color-brand-500: #465fff;
+  --color-brand-600: #3641f5;
+}
+
+@layer base {
+
+  *,
+  ::after,
+  ::before,
+  html,
+  body,
+  input,
+  button,
+  select,
+  textarea {
+    font-family: var(--font-be-vietnam-pro, 'Be Vietnam Pro', sans-serif) !important;
+  }
+
+  body {
+    @apply relative font-sans font-light text-sm text-gray-700 antialiased bg-gray-50;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-medium text-gray-900;
+  }
+}
+
+:root {
+  --cursor-paw: url('/cursors/paw.svg') 16 16, auto;
+  --cursor-paw-hover: url('/cursors/paw-hover.svg') 16 16, pointer;
+}
+
+html,
+body {
+  cursor: var(--cursor-paw);
+}
+
+/* Phần tử bấm được (kể cả class Tailwind cursor-pointer / cursor-grab của thẻ Kanban) */
+a,
+button,
+label,
+select,
+summary,
+[role='button'],
+.cursor-pointer,
+.cursor-grab,
+.cursor-grabbing,
+.active\:cursor-grabbing:active {
+  cursor: var(--cursor-paw-hover) !important;
+}
+
+/* Ô nhập liệu vẫn giữ con trỏ chữ I để dễ thao tác */
+input:not([type='checkbox']):not([type='radio']):not([type='file']),
+textarea {
+  cursor: text !important;
+}
+html.dark {
+  filter: invert(1) hue-rotate(180deg);
+  background: #fff;
+}
+html.dark img,
+html.dark video,
+html.dark canvas {
+  filter: invert(1) hue-rotate(180deg);
+}
+/* --- UTILITIES & SCROLLBAR --- */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e4e7ec;
+  border-radius: 9999px;
+}
+
+/* --- THƯ VIỆN BÊN THỨ 3 (Dọn dẹp hoàn toàn @apply dark:) --- */
+.apexcharts-legend-text {
+  color: #344054 !important;
+}
+
+.apexcharts-text {
+  fill: #344054 !important;
+}
+
+.apexcharts-gridline {
+  stroke: #f2f4f7 !important;
+}
+
+.flatpickr-calendar {
+  margin-top: 0.5rem;
+  background-color: #ffffff !important;
+  border-radius: 0.75rem !important;
+  padding: 1.25rem !important;
+  border: 1px solid #e4e7ec !important;
+  color: #667085 !important;
+}
+
+.flatpickr-day.selected {
+  background-color: #465fff !important;
+  color: #ffffff !important;
+}
+
+.iphone-screen-3d button {
+  cursor: pointer;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* =============================================================================
+   DÁN VÀO CUỐI src/app/globals.css
+   ============================================================================= */
+
+:root {
+  /* Chiều cao thanh tab dưới (mobile). Đổi 1 chỗ này là mọi layout tự khớp. */
+  --tabbar-h: 60px;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+[role='button'] {
+  touch-action: manipulation; /* bỏ delay double-tap-zoom 300ms trên iOS */
+}
+
+/* Ẩn scrollbar cho chip/tab cuộn ngang */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Chiều cao "vừa màn hình" cho trang kiểu app (Kanban).
+   mobile  = 100dvh - top bar (4rem) - tab bar - safe-area
+   desktop = 100dvh - top bar (4.5rem)
+   Nếu top bar của Shelter Layout cao khác, chỉnh 4rem / 4.5rem tại đây. */
+:root { --tabbar-h: 56px; }  /* khớp ShelterMobileNav h-[56px] */
+.h-app-screen { height: calc(100dvh - var(--tabbar-h) - env(safe-area-inset-bottom) - 72px); }
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']), select, textarea { font-size: 16px !important; }
+}
+@media (min-width: 768px) {
+  .h-app-screen {
+    height: calc(100dvh - 4.5rem);
+  }
+}
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']), select, textarea { font-size: 16px !important; }
+}
+/* iOS Safari tự zoom khi focus vào input có font < 16px → rất khó chịu.
+   Ép 16px trên mobile, desktop giữ nguyên các cỡ chữ nhỏ hiện có. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ===== MOBILE SHEET SYSTEM ===== */
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+
+@media (max-width: 639px) {
+  .m-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+    animation: fadeIn .25s ease-out;
+  }
+  .m-sheet {
+    position: relative;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92dvh !important;
+    border-radius: 28px 28px 0 0 !important;
+    animation: sheetUp .38s cubic-bezier(.32,.72,0,1) !important;
+    padding-bottom: env(safe-area-inset-bottom);
+    box-shadow: 0 -8px 40px rgba(0,0,0,.18) !important;
+  }
+  /* Grab handle kiểu iOS */
+  .m-sheet::before {
+    content: ''; position: absolute; top: 8px; left: 50%;
+    width: 38px; height: 5px; margin-left: -19px;
+    border-radius: 3px; background: #D1D1D6; z-index: 30; pointer-events: none;
+  }
+  /* Chống iOS tự zoom khi focus input */
+  .m-sheet input, .m-sheet select, .m-sheet textarea { font-size: 16px !important; }
+  /* Vùng chạm tối thiểu 44px cho nút tròn/icon */
+  .m-sheet button:has(> svg:only-child) { min-width: 40px; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+  .m-sheet .overflow-y-auto, .m-sheet.overflow-y-auto { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+}
+
+/* Hiệu ứng nhấn kiểu native */
+@media (hover: none) {
+  button:active, a:active { transform: scale(.97); transition: transform .12s; }
+}
+html { -webkit-tap-highlight-color: transparent; }
+body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }

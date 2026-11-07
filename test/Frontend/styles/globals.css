@@ -1,0 +1,81 @@
+/* src/styles/globals.css */
+
+/* 1. Import font của bạn (luôn ở trên cùng) */
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;700;800&family=Inter:wght@600&family=Roboto:wght@500&display=swap');
+
+/* 2. Import Tailwind v4 (thay thế @tailwind base/components/utilities) */
+@import "tailwindcss";
+
+/* 3. Định nghĩa theme của bạn bằng @theme */
+@theme {
+  /* --- Fonts (từ config cũ) --- */
+  --font-sans: "Be Vietnam Pro", sans-serif;
+  --font-roboto: "Roboto", sans-serif;
+  --font-inter: "Inter", sans-serif;
+
+  /* --- Colors (từ config cũ) --- */
+  --color-brand-orange: rgba(231,135,32,1);
+  --color-brand-orange-dark: rgba(238,78,45,1);
+  --color-brand-pink: rgba(254,52,100,1);
+  --color-brand-dark-green: rgba(33,55,33,1);
+  --color-brand-yellow-light: rgba(255,233,122,1);
+  --color-brand-gray: rgba(122,123,123,1);
+  --color-brand-gray-light: rgba(249,249,249,1);
+  --color-brand-gray-border: rgb(169,170,171);
+  
+  /* --- Shadows (từ config cũ) --- */
+  --shadow-card: 0px 4px 29.399999618530273px 0px rgba(0,0,0,0.16);
+  --shadow-card-img: 0px 4px 4px 0px rgba(0,0,0,0.25);
+  --shadow-header: 0px 6px 10px -2px rgba(0,0,0,0.1);
+}
+
+/* 4. Áp dụng các class cơ sở (layer base) */
+@layer base {
+  html {
+    /* Sử dụng theme() thay vì @apply font-sans ở đây 
+       để đảm bảo font được áp dụng đúng */
+    font-family: theme(font.sans);
+    scroll-behavior: smooth;
+  }
+
+  body {
+    /* Mặc định Tailwind đã có gray-50 và gray-900 
+       nên không cần định nghĩa lại trong @theme */
+    @apply font-sans bg-gray-50 text-gray-900 antialiased;
+  }
+
+  a {
+    /* Bây giờ Tailwind đã biết 'brand-orange' là gì 
+       vì nó được định nghĩa ngay bên trên */
+    @apply text-brand-orange hover:text-brand-orange-dark transition-colors duration-150;
+  }
+}
+@utility no-scrollbar {
+  /* Chrome, Safari and Opera */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+@layer utilities {
+  /* Custom Scrollbar Refined */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px; /* Mỏng hơn */
+    height: 4px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent; /* Nền trong suốt */
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #e5e7eb; /* Màu xám nhạt (gray-200) */
+    border-radius: 10px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #d1d5db; /* Đậm hơn khi hover (gray-300) */
+  }
+}
