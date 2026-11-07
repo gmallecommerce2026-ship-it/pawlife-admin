@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "start": "next start",
     "lint": "eslint .",
     "admin:grant": "ts-node --compiler-options {\"module\":\"CommonJS\"} scripts/grant-super-admin.ts",
@@ -49,14 +51,14 @@
     "leaflet": "^1.9.4",
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.553.0",
-    "next": "16.0.10",
+    "next": "^16.4.5",
     "next-auth": "^5.0.0-beta.30",
     "next-themes": "^0.4.6",
-    "react": "^19.2.3",
+    "react": "^19.2.9",
     "react-apexcharts": "^1.7.0",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
-    "react-dom": "^19.2.3",
+    "react-dom": "^19.2.9",
     "react-dropzone": "^14.3.5",
     "react-hook-form": "^7.66.0",
     "react-hot-toast": "^2.6.0",
@@ -76,6 +78,7 @@
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.16",
     "@prisma/client": "^5.19.1",
     "@svgr/webpack": "^8.1.0",
     "@types/leaflet": "^1.9.21",
@@ -85,12 +88,13 @@
     "@types/react-transition-group": "^4.4.12",
     "autoprefixer": "^10.4.22",
     "eslint": "^9",
-    "eslint-config-next": "16.0.7",
+    "eslint-config-next": "^16.4.5",
     "postcss": "^8.5.6",
     "prisma": "^5.19.1",
     "tailwindcss": "^4.1.17",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "^4.158.0"
   },
   "overrides": {
     "@react-jvectormap/core": {
