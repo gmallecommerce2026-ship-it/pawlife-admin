@@ -24,8 +24,8 @@ const GIFS: BgGif[] = [
     alt: "Ami bụng bự mắt to",
   },
   {
-    src: "https://media.tenor.com/P-PaaYgtW_IAAAAj/ami-b%E1%BB%A5ng-b%E1%BB%B1.gif",
-    alt: "Ami bụng bự ôm trái tim",
+    src: "https://media.tenor.com/SEIlEW0LzPQAAAAj/ami-b%E1%BB%A5ng-b%E1%BB%B1.gif",
+    alt: "Ami bụng bự đứng với dấu hỏi chấm",
   },
   {
     src: "https://media.tenor.com/nBq0WuGRO14AAAAj/ami-b%E1%BB%A5ng-b%E1%BB%B1.gif",
